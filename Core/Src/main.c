@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "can.h"
+#include "telemetry.h"
 #include "utility.h"
 /* USER CODE END Includes */
 
@@ -37,16 +38,21 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define NOTE_SERIAL &huart1
+#define SERIAL_BUFFER_SIZE 512
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+// Store the byte read from USART
+uint8_t usart_rx_byte;
+volatile size_t serial_fill_index = 0;
+char serial_buffer[SERIAL_BUFFER_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -54,6 +60,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -94,10 +101,26 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_USART2_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  // Start receiving from USART1 interrupt
+  // USART1 is for communicating with Note Card
   if (init_can() == 0) {
 	  DBG("Initialized CAN successfully");
+  } else {
+	  ERR("Failed to initialize CAN!");
+
+	  while(1);
   }
+
+  if (telemetry_init() == 0) {
+	  DBG("Initialized telemetry successfully");
+  } else {
+	  ERR("Failed to initialize telemetry!");
+
+	  while(1);
+  }
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,6 +142,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -144,6 +168,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
@@ -184,6 +214,44 @@ static void MX_CAN_Init(void)
 
   /* USER CODE END CAN_Init 2 */
 
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+  // Reset our buffer management
+  serial_fill_index = 0;
+
+  // Start the inbound receive
+  HAL_UART_Receive_IT(&huart1, &usart_rx_byte, 1);  // receive 1 byte via interrupt
+  /* USER CODE END USART1_Init 2 */
 }
 
 /**
@@ -247,6 +315,37 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	DBG("Received message");
 
 	can_on_received_message_handler(hcan);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	// USART1 is for communicating with Note Card
+	// USART2 is for printf
+    if (huart->Instance == USART1) {
+//    	DBG("[USART1] Received chacracter: %c", usart_rx_byte);
+
+    	// Fill the buffer with the character we received from USART
+        if (serial_fill_index < SERIAL_BUFFER_SIZE) {
+        	serial_buffer[serial_fill_index++] = usart_rx_byte;
+
+        	if (usart_rx_byte == '\n' || usart_rx_byte == '\r') {
+        		serial_buffer[serial_fill_index] = '\0';  // Null-terminate
+
+        	    DBG("[Note] says: %s", serial_buffer);  // print out the entire message
+
+        	    serial_fill_index = 0;  // Reset for next message
+        	}
+        } else {
+        	// Buffer full
+        	// Print out the entire message
+        	DBG("%.*s", SERIAL_BUFFER_SIZE, serial_buffer);
+
+        	serial_fill_index = 0;
+        }
+
+        // Re-enable interrupt for next byte
+        HAL_UART_Receive_IT(&huart1, &usart_rx_byte, 1);
+    }
 }
 /* USER CODE END 4 */
 

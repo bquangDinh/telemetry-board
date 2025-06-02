@@ -90,6 +90,16 @@ void can_on_received_message_handler(CAN_HandleTypeDef* hcan) {
 		return;
 	}
 
+	char row = rx_header.StdId - 0x100;
 
+	DBG("Index is at: %d", row);
+
+	DBG("Sending data to Note Card...");
+
+	if (telemetry_send_bms_to_note(row, rx_data) == 0) {
+		DBG("Sent successfully!");
+	} else {
+		DBG("Failed to send data to Note Card");
+	}
 }
 

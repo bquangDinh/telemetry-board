@@ -9,6 +9,8 @@
 #define INC_CAN_H_
 
 #include "stm32f0xx_hal.h"
+#include "utility.h"
+#include "telemetry.h"
 
 /**
  * @brief Init and start CAN communication
