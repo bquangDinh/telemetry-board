@@ -12,6 +12,21 @@
 #include "utility.h"
 #include "telemetry.h"
 
+#define TEMP_SENSOR_ARDUINO_BOARD_ID 0x110
+
+#define CABIN_TEMP_SENSOR_ID 0
+#define TRUNK_TEMP_SENSOR_ID 1
+
+#define CABIN_TEMP_LABEL "cabin_temp"
+#define TRUNK_TEMP_LABEL "trunk_temp"
+
+#define SCALED_INT_TWO_DECIMAL_PRECISION 100
+
+typedef union {
+	float f;
+	uint8_t bytes[4];
+} FloatByte;
+
 /**
  * @brief Init and start CAN communication
  *
@@ -29,4 +44,6 @@ int init_can();
  */
 void can_on_received_message_handler(CAN_HandleTypeDef* hcan);
 
+static void handle_temp_arduino_message(const uint8_t* data);
+static void handle_bms_message(const uint32_t id, const uint8_t* data);
 #endif /* INC_CAN_H_ */

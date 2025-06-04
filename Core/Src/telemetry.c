@@ -101,6 +101,35 @@ int telemetry_send_bms_to_note(int row, const uint8_t* data) {
 	return 0;
 }
 
+int telemetry_send_data_to_note(const char* label, const uint32_t value) {
+	assert_param(is_telemetry_inited == 1);
+	assert_param(label != NULL);
+
+	char buffer[256];
+	int offset = 0;
+
+	offset += snprintf(&buffer[offset], sizeof(buffer) - offset, "{\"req\":\"note.add\",\"file\":\"data.qo\",\"sync\":true,\"body\":{");
+
+	offset += snprintf(&buffer[offset], sizeof(buffer) - offset, "\"%s\":%ld", label, value);
+
+	// End JSON
+	offset += snprintf(&buffer[offset], sizeof(buffer) - offset, "}}\n");
+
+	// Check for overflow
+	if (offset >= sizeof(buffer)) {
+		return -1;
+	}
+
+	DBG("Message is: %s", buffer);
+
+	// Transmit the final string over UART
+	if (write_to_serial(buffer, offset) != HAL_OK) {
+		return -1;
+	}
+
+	return 0;
+}
+
 static HAL_StatusTypeDef write_to_serial(const char* data, const int len) {
 	return HAL_UART_Transmit(NOTE_SERIAL, (uint8_t*)data, len, HAL_MAX_DELAY);
 }

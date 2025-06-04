@@ -23,4 +23,18 @@
 #define WARN(fmt, ...)
 #define printf(fmt, ...)
 #endif
+
+#ifdef ENABLE_TIMER
+// Specify the timer for Utility
+extern TIM_HandleTypeDef htim2;
+
+#define TIMER_INSTANCE &htim2
+
+/**
+ * @brief Delay for the given us using timer instance
+ *
+ * @param us		provided us for the timer to count up to
+ */
+void delay_us(int us);
+#endif
 #endif /* INC_UTILITY_H_ */

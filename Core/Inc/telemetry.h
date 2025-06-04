@@ -48,6 +48,7 @@ int telemetry_init();
  */
 int telemetry_send_bms_to_note(int row, const uint8_t* data);
 
+int telemetry_send_data_to_note(const char* label, const uint32_t value);
 /**
  * @brief Send data over USART
  */

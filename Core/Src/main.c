@@ -33,7 +33,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define ENABLE_CAN
+#define ENABLE_TELEMETRY
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -105,14 +106,19 @@ int main(void)
   /* USER CODE BEGIN 2 */
   // Start receiving from USART1 interrupt
   // USART1 is for communicating with Note Card
+  DBG("Starting...");
+
+#ifdef ENABLE_CAN
   if (init_can() == 0) {
-	  DBG("Initialized CAN successfully");
-  } else {
-	  ERR("Failed to initialize CAN!");
+  	  DBG("Initialized CAN successfully");
+    } else {
+  	  ERR("Failed to initialize CAN!");
 
-	  while(1);
-  }
+  	  while(1);
+    }
+#endif
 
+#ifdef ENABLE_TELEMETRY
   if (telemetry_init() == 0) {
 	  DBG("Initialized telemetry successfully");
   } else {
@@ -120,17 +126,18 @@ int main(void)
 
 	  while(1);
   }
+#endif
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+    while (1)
+    {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+    }
   /* USER CODE END 3 */
 }
 
@@ -252,6 +259,7 @@ static void MX_USART1_UART_Init(void)
   // Start the inbound receive
   HAL_UART_Receive_IT(&huart1, &usart_rx_byte, 1);  // receive 1 byte via interrupt
   /* USER CODE END USART1_Init 2 */
+
 }
 
 /**
@@ -313,8 +321,9 @@ static void MX_GPIO_Init(void)
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	DBG("Received message");
-
+#ifdef ENABLE_CAN
 	can_on_received_message_handler(hcan);
+#endif
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)

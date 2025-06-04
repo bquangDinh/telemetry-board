@@ -20,3 +20,11 @@ int _write(int file, char *ptr, int len) {
 	return len;
 }
 #endif
+
+#ifdef ENABLE_TIMER
+void delay_us(int us) {
+	 __HAL_TIM_SET_COUNTER(TIMER_INSTANCE, 0);  // reset counter
+
+	 while (__HAL_TIM_GET_COUNTER(TIMER_INSTANCE) < us);
+}
+#endif
