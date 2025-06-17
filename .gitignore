@@ -54,6 +54,4 @@ dkms.conf
 # Build directories
 build/
 
-.settings/
-
 Debug/
