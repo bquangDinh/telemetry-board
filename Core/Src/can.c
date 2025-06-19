@@ -19,9 +19,18 @@ extern CAN_HandleTypeDef hcan;
  * CAN RX Header - stores the header of the received message
  */
 static CAN_RxHeaderTypeDef rx_header;
+static CAN_TxHeaderTypeDef tx_header;
+static uint32_t tx_mailbox;
 static uint8_t rx_data[8];
 
 int init_can() {
+	// Set up tx header
+	tx_header.StdId = BOARD_ID;
+	tx_header.IDE = CAN_ID_STD; // use standard id, not extended 11-bit id
+	tx_header.RTR = CAN_RTR_DATA;
+	tx_header.DLC = 8;
+	tx_header.TransmitGlobalTime = DISABLE;
+
 	// Set up filters
 	// Since the telemetry board should only accept CAN data from BMS
 	// Each BMS message starts with the first 3 bit as 001
@@ -95,6 +104,12 @@ void can_on_received_message_handler(CAN_HandleTypeDef* hcan) {
 	} else {
 		handle_bms_message(rx_header.StdId, rx_data);
 	}
+}
+
+HAL_StatusTypeDef send_can_message(const char* data) {
+	assert_param(data != NULL);
+
+	return HAL_CAN_AddTxMessage(CAN_Instance, &tx_header, (uint8_t*)data, &tx_mailbox);
 }
 
 static void handle_temp_arduino_message(const uint8_t* data) {

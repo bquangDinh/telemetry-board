@@ -13,6 +13,7 @@
 #include "telemetry.h"
 
 #define TEMP_SENSOR_ARDUINO_BOARD_ID 0x110
+#define BOARD_ID 0x111
 
 #define CABIN_TEMP_SENSOR_ID 0
 #define TRUNK_TEMP_SENSOR_ID 1
@@ -43,6 +44,15 @@ int init_can();
  * @param[in] hcan		Pointer to CAN handle
  */
 void can_on_received_message_handler(CAN_HandleTypeDef* hcan);
+
+/**
+ * @brief Send a CAN message
+ *
+ * @param[in] data		data
+ *
+ * @note the data must be 8-byte total
+ */
+HAL_StatusTypeDef send_can_message(const char* data);
 
 static void handle_temp_arduino_message(const uint8_t* data);
 static void handle_bms_message(const uint32_t id, const uint8_t* data);

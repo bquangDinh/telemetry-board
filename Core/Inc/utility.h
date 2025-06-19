@@ -37,4 +37,11 @@ extern TIM_HandleTypeDef htim2;
  */
 void delay_us(int us);
 #endif
+
+
+// MACRO FUNCTIONS
+#define PI 3.14f
+#define CIRCLE_PERIMETER(RAD) 2*PI*RAD
+#define ROUND_FLOAT(num) (int)(num + 0.5f)
+
 #endif /* INC_UTILITY_H_ */
