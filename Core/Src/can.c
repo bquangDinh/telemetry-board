@@ -113,8 +113,6 @@ HAL_StatusTypeDef send_can_message(const char* data) {
 }
 
 static void handle_temp_arduino_message(const uint8_t* data) {
-	DBG("Got temp reading from Arduino!");
-
 	// Arduno send 4-byte float number in 4 1-byte field
 	// The first byte indicates the ID of the sensor
 	// The next 4 bytes indicate the sensor value
@@ -129,10 +127,6 @@ static void handle_temp_arduino_message(const uint8_t* data) {
 
 	uint32_t scaled = (uint32_t)(value.f * SCALED_INT_TWO_DECIMAL_PRECISION);
 
-	DBG("Sensor ID: %d | Value read (scaled - 2 decimal precision): %ld", sensor_id, scaled);
-
-	DBG("Sending data to Note Card...");
-
 	const char* label = NULL;
 
 	if (sensor_id == CABIN_TEMP_SENSOR_ID)
@@ -142,7 +136,7 @@ static void handle_temp_arduino_message(const uint8_t* data) {
 
 	if (label) {
 		if (telemetry_send_data_to_note(label, scaled) == 0)
-			DBG("Sent successfully!");
+			DBG("Sent Arduino data successfully!");
 		else
 			DBG("Failed to send data to Note Card");
 	}
@@ -151,10 +145,10 @@ static void handle_temp_arduino_message(const uint8_t* data) {
 static void handle_bms_message(const uint32_t id, const uint8_t* data) {
 	char row = id - 0x100;
 
-	DBG("Sending data to Note Card...");
+//	DBG("Sending data to Note Card...");
 
 	if (telemetry_send_bms_to_note(row, rx_data) == 0) {
-		DBG("Sent successfully!");
+		DBG("Sent BMS successfully!");
 	} else {
 		DBG("Failed to send data to Note Card");
 	}

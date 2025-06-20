@@ -42,6 +42,7 @@
 /* USER CODE BEGIN PM */
 #define NOTE_SERIAL &huart1
 #define SERIAL_BUFFER_SIZE 512
+#define TELEMETRY_SYNCING_PERIOD 10 // sync to NoteHub every 10 seconds
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -57,6 +58,7 @@ UART_HandleTypeDef huart2;
 uint8_t usart_rx_byte;
 volatile size_t serial_fill_index = 0;
 char serial_buffer[SERIAL_BUFFER_SIZE];
+char telemetry_counter = 0; // counter to 10
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -428,6 +430,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM2) {
         motor_on_timer_interrupt();
+
+        telemetry_counter++;
+
+        if (telemetry_counter >= TELEMETRY_SYNCING_PERIOD) {
+        	telemetry_sync_to_note();
+
+        	telemetry_counter = 0;
+        }
     }
 }
 /* USER CODE END 4 */

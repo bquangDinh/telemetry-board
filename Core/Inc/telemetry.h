@@ -9,9 +9,10 @@
 #define INC_TELEMETRY_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "stm32f0xx_hal.h"
 #include "utility.h"
-//#include "note.h"
+#include <string.h>  /* strcpy, strcmp */
 
 // More details: https://rutgers-solar-car.atlassian.net/wiki/spaces/RSC/pages/22511621/BMS+CAN+Message+Structures
 #define COLS 8
@@ -22,6 +23,14 @@
 #define NOTE_CARD_ADD_REQUEST_CMD "note.add"
 #define NOTE_HUB_OPERATION_MODE "continuous"
 #define IGNORE_CHECKSUM
+
+struct Telemetry_Data {
+	char* label;
+	int value;
+	struct Telemetry_Data* next;
+};
+
+typedef struct Telemetry_Data Telemetry_Data;
 
 extern const char* const telemetry_labels[ROWS][COLS];
 
@@ -49,8 +58,20 @@ int telemetry_init();
 int telemetry_send_bms_to_note(int row, const uint8_t* data);
 
 int telemetry_send_data_to_note(const char* label, const uint32_t value);
+
+int telemetry_sync_to_note();
+
 /**
  * @brief Send data over USART
  */
 static HAL_StatusTypeDef write_to_serial(const char* data, const int len);
+
+/**
+ * @brief Add Note data to a linked list, NoteCard will then pack all data inside the list to send all at once
+ */
+static int add_note_to_list(const char* label, int value);
+
+static Telemetry_Data* make_note(const char* label, const int value);
+
+static void delete_list();
 #endif /* INC_TELEMETRY_H_ */

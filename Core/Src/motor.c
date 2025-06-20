@@ -17,10 +17,6 @@ void motor_on_timer_interrupt() {
 	// Calculate speed
 	float speed = dist / TIME_PASSED;
 
-	DBG("Distance traveled is %d meters", ROUND_FLOAT(dist));
-
-	DBG("Speed is (rounded up to) %d m/s", ROUND_FLOAT(speed));
-
 	send_speed_to_can(speed);
 
 	send_speed_to_telemetry(speed);
@@ -41,8 +37,6 @@ static inline void send_speed_to_can(const float speed) {
 			.f = speed
 	};
 
-	DBG("Sending speed to CAN with ID: %d", BOARD_ID);
-
 	char msg[8] = { value.bytes[0], value.bytes[1], value.bytes[2], value.bytes[3], 0, 0, 0, 0 };
 
 	HAL_StatusTypeDef status = send_can_message(msg);
@@ -58,8 +52,6 @@ static inline void send_speed_to_telemetry(const float speed) {
 	assert_param(speed >= 0);
 
 	uint32_t scaled = (uint32_t)(speed * SCALED_INT_TWO_DECIMAL_PRECISION);
-
-	DBG("Sending scaled speed of (%ld) to telemetry with board id [%d]", scaled, BOARD_ID);
 
 	if (telemetry_send_data_to_note(SPEED_LABEL, scaled) == 0) {
 		DBG("Sent successfully!");
