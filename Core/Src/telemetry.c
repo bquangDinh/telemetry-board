@@ -7,16 +7,19 @@
 
 #include "telemetry.h"
 
+#define IGNORE_FIELD "x"
+#define RESERVE_TWOBYTE_FIELD "-"
+
 const char* const telemetry_labels[ROWS][COLS] = {
-		{	"rel", "x", "Mcn", "x", "pcl", "fas", "x", "cks"	},
-		{	"ccl", "x", "dcl", "x", "pcr", "piv", "pov", "cks"	},
+		{	"rel", IGNORE_FIELD, "Mcn", IGNORE_FIELD, "pcl", "fas", IGNORE_FIELD, "cks"	},
+		{	"ccl", IGNORE_FIELD, "dcl", IGNORE_FIELD, "pcr", "piv", "pov", "cks"	},
 		{	"soc", "pam", "prs", "dod", "phl", "psv", "pac", "cks"	},
 		{	"Mpv", "mpv", "tpc", "crl", "pck", "pdk", "Mpd", "cks"	},
 		{	"dt1", "dt2", "avc", "htp", "ltp", "atp", "fsp", "cks"	},
 		{	"itp", "lcv", "hcv", "acv", "lov", "hov", "aov", "cks"	},
 		{	"lcs", "hcs", "acs", "Mcv", "mcv", "hti", "lti", "cks"	},
 		{	"hci", "lci", "hoi", "loi", "hii", "lii", "aam", "cks"	},
-		{	"atc", "att", "icp", "ith", "int", "x", "x", "x"	}
+		{	"atc", "att", "icp", "ith", "int", IGNORE_FIELD, IGNORE_FIELD, IGNORE_FIELD	}
 };
 
 static Telemetry_Data *head = NULL;
@@ -61,7 +64,26 @@ int telemetry_send_bms_to_note(int row, const uint8_t* data) {
 #else
 	for (int i = 0; i < COLS; ++i) {
 #endif
-		add_note_to_list((*labels)[i], (int)data[i]);
+		// Ignore field that is "x"
+		if (strcmp((*labels)[i], IGNORE_FIELD) == 0) continue;
+
+		// Check if this field requires 2 bytes to represent data
+		if (i != COLS - 1) {
+			// If we're not at the last column
+			// Then we have to check if the next column relative to the current one is marked as "-"
+			// Which means we have to take two bytes, not one byte
+			if (strcmp((*labels)[i + 1], RESERVE_TWOBYTE_FIELD) == 0) {
+				// (data[i + 1] << 8) | data[i] is for Little Endian format
+				// If BMS is set to Big Endian format, reserve the order
+				add_note_to_list((*labels)[i], (data[i + 1] << 8) | data[i]);
+
+				i++;
+			} else {
+				add_note_to_list((*labels)[i], (int)data[i]);
+			}
+		} else {
+			add_note_to_list((*labels)[i], (int)data[i]);
+		}
 	}
 
 	return 0;
@@ -207,6 +229,10 @@ static void delete_list() {
 
 		head = head->next;
 
+		free(ptr->label);
+
 		free(ptr);
 	}
+
+	head = NULL;
 }
