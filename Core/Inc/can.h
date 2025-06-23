@@ -12,8 +12,8 @@
 #include "utility.h"
 #include "telemetry.h"
 
-#define TEMP_SENSOR_ARDUINO_BOARD_ID 0x110
-#define BOARD_ID 0x111
+#define TEMP_SENSOR_ARDUINO_BOARD_ID 0x112
+#define BOARD_ID 0x114
 
 #define CABIN_TEMP_SENSOR_ID 0
 #define TRUNK_TEMP_SENSOR_ID 1

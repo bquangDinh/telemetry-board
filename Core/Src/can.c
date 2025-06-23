@@ -93,6 +93,19 @@ int init_can() {
 void can_on_received_message_handler(CAN_HandleTypeDef* hcan) {
 	assert_param(hcan != NULL);
 
+	// Check FIFO overflow
+	if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_FOV0)) {
+	    // FIFO 0 overrun occurred
+		WARN("FIFO Overflow!!!!");
+
+		// Keep dropping messages util FIFO is cleared
+		while (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_FOV0)) {
+			HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
+		}
+
+		DBG("FIFO is cleared!");
+	}
+
 	// Retrieve message from FIFO
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data) != HAL_OK) {
 		//TODO: reports CAN error back to telemetry web server

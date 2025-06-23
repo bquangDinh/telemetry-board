@@ -385,6 +385,7 @@ static void MX_GPIO_Init(void)
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	DBG("Received message");
+
 #ifdef ENABLE_CAN
 	can_on_received_message_handler(hcan);
 #endif
