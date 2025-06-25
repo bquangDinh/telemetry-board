@@ -39,7 +39,7 @@ static inline void send_speed_to_can(const float speed) {
 
 	char msg[8] = { value.bytes[0], value.bytes[1], value.bytes[2], value.bytes[3], 0, 0, 0, 0 };
 
-	HAL_StatusTypeDef status = send_can_message(msg);
+	HAL_StatusTypeDef status = send_can_message(MOTOR_CAN_ID, msg);
 
 	if (status == HAL_OK) {
 		DBG("Sent speed successfully to CAN!");
@@ -51,11 +51,12 @@ static inline void send_speed_to_can(const float speed) {
 static inline void send_speed_to_telemetry(const float speed) {
 	assert_param(speed >= 0);
 
-	uint32_t scaled = (uint32_t)(speed * SCALED_INT_TWO_DECIMAL_PRECISION);
+	FloatByte value = {
+		.f = speed
+	};
+	
+	// Construct CAN message
+	char msg[8] = { value.bytes[0], value.bytes[1], value.bytes[2], value.bytes[3], 0, 0, 0, 0 };
 
-	if (telemetry_send_data_to_note(SPEED_LABEL, scaled) == 0) {
-		DBG("Sent successfully!");
-	} else {
-		DBG("Failed to send data to Note Card");
-	}
+	add_telemetry(MOTOR_CAN_ID, msg);
 }

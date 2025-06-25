@@ -59,6 +59,7 @@ uint8_t usart_rx_byte;
 volatile size_t serial_fill_index = 0;
 char serial_buffer[SERIAL_BUFFER_SIZE];
 char telemetry_counter = 0; // counter to 10
+char timer_interrupt = 0; // set to 1 if the timer interrupt is called
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -144,6 +145,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    	if (timer_interrupt) {
+    		timer_interrupt = 0;
+
+            motor_on_timer_interrupt();
+
+            telemetry_counter++;
+
+            DBG("counter is %d", telemetry_counter);
+
+            if (telemetry_counter >= TELEMETRY_SYNCING_PERIOD) {
+            	telemetry_sync_to_note();
+
+            	telemetry_counter = 0;
+            }
+    	}
+
+#ifdef ENABLE_PRINTF_DEBUG
+      log_telemetry();
+#endif
+
+    	HAL_Delay(1);
     }
   /* USER CODE END 3 */
 }
@@ -384,8 +406,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	DBG("Received message");
-
 #ifdef ENABLE_CAN
 	can_on_received_message_handler(hcan);
 #endif
@@ -430,15 +450,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM2) {
-        motor_on_timer_interrupt();
-
-        telemetry_counter++;
-
-        if (telemetry_counter >= TELEMETRY_SYNCING_PERIOD) {
-        	telemetry_sync_to_note();
-
-        	telemetry_counter = 0;
-        }
+        timer_interrupt = 1;
     }
 }
 /* USER CODE END 4 */
