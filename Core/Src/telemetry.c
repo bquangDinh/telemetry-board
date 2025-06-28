@@ -7,8 +7,8 @@
 
 #include "telemetry.h"
 
-// The number of items is from 0x100 -> 0x10B + 0x10C (Arduino) + 0x10D (telemetry) + 0x10E (Ras Pi 5) = 15 keys
-#define NUM_ITEMS 15
+// The number of items is from 0x100 -> 0x10B + 0x10C (Arduino) + 0x10D (telemetry) + 0x10E (Ras Pi 5) + 0x10F (Reserved) = 16 keys
+#define NUM_ITEMS 16
 
 static Telemetry_Data list[NUM_ITEMS]; // Array of telemetry data
 

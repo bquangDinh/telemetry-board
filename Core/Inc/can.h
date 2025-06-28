@@ -13,14 +13,15 @@
 #include "telemetry.h"
 
 #define TEMP_SENSOR_ARDUINO_BOARD_ID 0x10C
+#define RESERVED_CAN_ID 0x10F
 
-#define CABIN_TEMP_SENSOR_ID 0
-#define TRUNK_TEMP_SENSOR_ID 1
+// #define CABIN_TEMP_SENSOR_ID 0
+// #define TRUNK_TEMP_SENSOR_ID 1
 
-#define CABIN_TEMP_LABEL "cabin_temp"
-#define TRUNK_TEMP_LABEL "trunk_temp"
+// #define CABIN_TEMP_LABEL "cabin_temp"
+// #define TRUNK_TEMP_LABEL "trunk_temp"
 
-#define SCALED_INT_TWO_DECIMAL_PRECISION 100
+// #define SCALED_INT_TWO_DECIMAL_PRECISION 100
 
 typedef union {
 	float f;

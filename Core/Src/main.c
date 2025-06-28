@@ -25,6 +25,7 @@
 #include "can.h"
 #include "motor.h"
 #include "utility.h"
+#include "bps_hardfault.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -388,8 +389,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin : PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pins : PB7 PB8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -445,7 +446,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 	 if (pin == MOTOR_GPIO_PIN) {
 		 motor_on_gpio_interrupt();
-	 }
+	 } else if (pin == BPS_HARDFAULT_PIN) {
+     // Handle hard fault
+     // Check if the pin is set to high
+      if (HAL_GPIO_ReadPin(BPS_HARDFAULT_GPIO_PORT, BPS_HARDFAULT_PIN) == GPIO_PIN_SET) {
+          // If the pin is high, it indicates a hard fault
+          BPS_HardFault_Handler(1);
+      } else {
+          // If the pin is low, it indicates a normal state
+          BPS_HardFault_Handler(0);
+      }
+   }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
