@@ -17,6 +17,7 @@
 #define WHEEL_RADIUS 0.2794f // in meter
 #define ONE_REV_TO_COUNTERS 100 // one revolution per 100 counters
 #define TIME_PASSED 1 // in seconds
+#define MOTOR_CAN_ID 0x10D
 
 // Specify timer for motor
 extern TIM_HandleTypeDef htim2;

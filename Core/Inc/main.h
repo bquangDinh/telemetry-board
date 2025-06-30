@@ -60,6 +60,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 #define MOTOR_GPIO_PIN GPIO_PIN_7
+#define BPS_HARDFAULT_GPIO_PORT GPIOB
+#define BPS_HARDFAULT_PIN GPIO_PIN_8
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

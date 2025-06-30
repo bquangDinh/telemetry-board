@@ -25,6 +25,7 @@
 #include "can.h"
 #include "motor.h"
 #include "utility.h"
+#include "bps_hardfault.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +60,7 @@ uint8_t usart_rx_byte;
 volatile size_t serial_fill_index = 0;
 char serial_buffer[SERIAL_BUFFER_SIZE];
 char telemetry_counter = 0; // counter to 10
+char timer_interrupt = 0; // set to 1 if the timer interrupt is called
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -144,6 +146,27 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    	if (timer_interrupt) {
+    		timer_interrupt = 0;
+
+            motor_on_timer_interrupt();
+
+            telemetry_counter++;
+
+            DBG("counter is %d", telemetry_counter);
+
+            if (telemetry_counter >= TELEMETRY_SYNCING_PERIOD) {
+            	telemetry_sync_to_note();
+
+            	telemetry_counter = 0;
+            }
+    	}
+
+#ifdef ENABLE_PRINTF_DEBUG
+      log_telemetry();
+#endif
+
+    	HAL_Delay(1);
     }
   /* USER CODE END 3 */
 }
@@ -366,8 +389,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin : PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  /*Configure GPIO pins : PB7 PB8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -384,8 +407,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	DBG("Received message");
-
 #ifdef ENABLE_CAN
 	can_on_received_message_handler(hcan);
 #endif
@@ -425,20 +446,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 	 if (pin == MOTOR_GPIO_PIN) {
 		 motor_on_gpio_interrupt();
-	 }
+	 } else if (pin == BPS_HARDFAULT_PIN) {
+     // Handle hard fault
+     // Check if the pin is set to high
+      if (HAL_GPIO_ReadPin(BPS_HARDFAULT_GPIO_PORT, BPS_HARDFAULT_PIN) == GPIO_PIN_SET) {
+          // If the pin is high, it indicates a hard fault
+          BPS_HardFault_Handler(1);
+      } else {
+          // If the pin is low, it indicates a normal state
+          BPS_HardFault_Handler(0);
+      }
+   }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     if (htim->Instance == TIM2) {
-        motor_on_timer_interrupt();
-
-        telemetry_counter++;
-
-        if (telemetry_counter >= TELEMETRY_SYNCING_PERIOD) {
-        	telemetry_sync_to_note();
-
-        	telemetry_counter = 0;
-        }
+        timer_interrupt = 1;
     }
 }
 /* USER CODE END 4 */

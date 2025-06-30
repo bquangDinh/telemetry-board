@@ -25,7 +25,6 @@ static uint8_t rx_data[8];
 
 int init_can() {
 	// Set up tx header
-	tx_header.StdId = BOARD_ID;
 	tx_header.IDE = CAN_ID_STD; // use standard id, not extended 11-bit id
 	tx_header.RTR = CAN_RTR_DATA;
 	tx_header.DLC = 8;
@@ -93,77 +92,21 @@ int init_can() {
 void can_on_received_message_handler(CAN_HandleTypeDef* hcan) {
 	assert_param(hcan != NULL);
 
-	// Check FIFO overflow
-	if (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_FOV0)) {
-	    // FIFO 0 overrun occurred
-		WARN("FIFO Overflow!!!!");
-
-		// Keep dropping messages util FIFO is cleared
-		while (__HAL_CAN_GET_FLAG(hcan, CAN_FLAG_FOV0)) {
-			HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
-		}
-
-		DBG("FIFO is cleared!");
-	}
-
 	// Retrieve message from FIFO
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data) != HAL_OK) {
 		//TODO: reports CAN error back to telemetry web server
 		return;
 	}
 
-	if (rx_header.StdId == TEMP_SENSOR_ARDUINO_BOARD_ID) {
-		handle_temp_arduino_message(rx_data);
-	} else {
-		handle_bms_message(rx_header.StdId, rx_data);
-	}
+	// Add telemetry data
+	add_telemetry(rx_header.StdId, rx_data);
 }
 
-HAL_StatusTypeDef send_can_message(const char* data) {
+HAL_StatusTypeDef send_can_message(uint32_t id, const char* data) {
 	assert_param(data != NULL);
+
+	// Set up tx header
+	tx_header.StdId = id; // Set the ID of the message to send
 
 	return HAL_CAN_AddTxMessage(CAN_Instance, &tx_header, (uint8_t*)data, &tx_mailbox);
 }
-
-static void handle_temp_arduino_message(const uint8_t* data) {
-	// Arduno send 4-byte float number in 4 1-byte field
-	// The first byte indicates the ID of the sensor
-	// The next 4 bytes indicate the sensor value
-	// The last 3 bytes are ignored
-	assert_param(data != NULL);
-
-	uint8_t sensor_id = data[0];
-
-	FloatByte value = {
-		.bytes = { data[1], data[2], data[3], data[4] }
-	};
-
-	uint32_t scaled = (uint32_t)(value.f * SCALED_INT_TWO_DECIMAL_PRECISION);
-
-	const char* label = NULL;
-
-	if (sensor_id == CABIN_TEMP_SENSOR_ID)
-		label = CABIN_TEMP_LABEL;
-	else if (sensor_id == TRUNK_TEMP_SENSOR_ID)
-		label = TRUNK_TEMP_LABEL;
-
-	if (label) {
-		if (telemetry_send_data_to_note(label, scaled) == 0)
-			DBG("Sent Arduino data successfully!");
-		else
-			DBG("Failed to send data to Note Card");
-	}
-}
-
-static void handle_bms_message(const uint32_t id, const uint8_t* data) {
-	char row = id - 0x100;
-
-//	DBG("Sending data to Note Card...");
-
-	if (telemetry_send_bms_to_note(row, rx_data) == 0) {
-		DBG("Sent BMS successfully!");
-	} else {
-		DBG("Failed to send data to Note Card");
-	}
-}
-
